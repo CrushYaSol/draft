@@ -1,0 +1,204 @@
+const players = ["Fred", "Jack", "Alex", "Otis", "Elliot", "Daniel (5th)", "Eric", "Noam", "Jason", "Aaron🍄", "Daniel", "Isaac", "Pace"];
+const player_ranking = [1, 1, 1.5, 2, 2, 2.5, 2.5, 2.5, 3, 3.5, 4, 5, 5];
+const message = document.getElementById("message");
+const player1 = {money: 20, stars: 0, roster: []};
+const player2 = {money: 20, stars: 0, roster: []};
+let stage = "first_turn";
+let loss = 0;
+let player1_turn = null;
+let turn_counter = document.getElementById("turn_counter");
+let round_count = 0;
+let end = false;
+let auction_player = players[Math.floor(Math.random()*players.length)];
+document.getElementById("auction_player").textContent = "The player is " + auction_player;
+document.getElementById("rating").textContent = "Rating: " + player_ranking[players.indexOf(auction_player)] + (player_ranking[players.indexOf(auction_player)] > 1 ? " points" : " point");
+document.getElementById("pass").textContent = "Skip";
+document.getElementById("money_counter").textContent = "Player 1's Money: " + player1.money + " | Player 2's Money: " + player2.money;
+if (Math.random() < 0.5){
+    player1_turn = true;
+    turn_counter.textContent = "Player 1's Turn";
+} else{
+    player1_turn = false;
+    turn_counter.textContent = "Player 2's Turn";
+}
+document.getElementById("bid").addEventListener("click", function(event){
+    event.preventDefault();
+    let bid_amount = Math.floor(Number(document.getElementById("bid_amount").value));
+    if (end){
+        message.textContent = "Go away the game's over";
+        return;
+    }
+    if (stage === "choice"){
+        if (player1_turn){
+            if (player1.money < 1){
+                message.textContent = "You have no more money!";
+                return;
+            }
+            player1_turn = false;
+        } else{
+            if (player2.money < 1){
+                message.textContent = "You have no more money!";
+                return;
+            }
+            player1_turn = true;
+        }
+        stage = "bidding";
+        loss = 1;
+        document.getElementById("bid").textContent = "Bid";
+        document.getElementById("pass").click();
+        return;
+    }
+    if (document.getElementById("bid_amount").value === ""){
+        message.textContent = "Please enter a bid!";
+        return;
+    }
+    if (bid_amount <= loss){
+        message.textContent = "You need to place a bid higher than the current one!";
+        return;
+    }
+    if (player1_turn && player1.money >= bid_amount){
+        loss = bid_amount;
+        message.textContent = "Bid raised to $" + loss;
+        player1_turn = false;
+    } else if (!player1_turn && player2.money >= bid_amount){
+        loss = bid_amount;
+        message.textContent = "Bid raised to $" + loss;
+        player1_turn = true;
+    } else{
+        message.textContent = "You don't have enough money for that! Try again.";
+        return;
+    }
+    document.getElementById("bid_amount").value = "";
+    stage = "bidding";
+    document.getElementById("pass").textContent = "Pass";
+    turn_counter.textContent = player1_turn ? "Player 1's Turn" : "Player 2's Turn";
+});
+document.getElementById("pass").addEventListener("click", function(){
+document.getElementById("bid_amount").value = "";
+if (!end){
+if (stage === "first_turn"){
+    stage = "choice";
+    document.getElementById("bid").textContent = "Buy for $1";
+    if (player1_turn){
+        message.textContent = "Player 1 skipped!";
+        player1_turn = false;
+    } else{
+        message.textContent = "Player 2 skipped!";
+        player1_turn = true;
+    }
+    turn_counter.textContent = player1_turn ? "Player 1's Turn" : "Player 2's Turn";
+} else if (stage === "choice"){
+    player_ranking.splice(players.indexOf(auction_player), 1);
+    players.splice(players.indexOf(auction_player), 1);
+    auction_player = players[Math.floor(Math.random()*players.length)];
+    document.getElementById("auction_player").textContent = "The player is " + auction_player;
+    document.getElementById("rating").textContent = "Rating: " + player_ranking[players.indexOf(auction_player)] + (player_ranking[players.indexOf(auction_player)] > 1 ? " points" : " point");
+    document.getElementById("pass").textContent = "Skip";
+    document.getElementById("bid").textContent = "Bid";
+    message.textContent = "Auction skipped! New player chosen!";
+    stage = "first_turn";
+    round_count += 1;
+    const player1_spending_efficiency = parseFloat(((5*player1.money)/(player1.stars/player1.roster.length)).toFixed(2));
+    const player2_spending_efficiency = parseFloat(((5*player2.money)/(player2.stars/player2.roster.length)).toFixed(2));
+    if (round_count == 10){
+        document.getElementById("bid").disabled = true;
+        document.getElementById("pass").disabled = true;
+        document.getElementById("player1:").hidden = false;
+        document.getElementById("player2:").hidden = false;
+        if (player1.roster.length > 0){
+            document.getElementById("player1_data").insertAdjacentHTML("beforeend", "<li>Score: " + player1.stars + "</li>");
+            document.getElementById("player1_data").insertAdjacentHTML("beforeend", "<li>Money Spent: " + (20 - player1.money) + "</li>");
+            document.getElementById("player1_data").insertAdjacentHTML("beforeend", "<li>Spending Efficiency: " + player1_spending_efficiency + "%</li>");
+        } else{
+            document.getElementById("player1_data").insertAdjacentHTML("beforeend", "<li>Player 1 is a failure and didn't get anyone</li>");
+        } if(player2.roster.length > 0){
+            document.getElementById("player2_data").insertAdjacentHTML("beforeend", "<li>Score: " + player2.stars + "</li>");
+            document.getElementById("player2_data").insertAdjacentHTML("beforeend", "<li>Money Spent: " + (20 - player2.money) + "</li>");
+            document.getElementById("player2_data").insertAdjacentHTML("beforeend", "<li>Spending Efficiency: " + player2_spending_efficiency + "%</li>");
+        } else{
+            document.getElementById("player2_data").insertAdjacentHTML("beforeend", "<li>Player 2 is a failure and didn't get anyone</li>");
+        } if (player1.stars > player2.stars){
+            message.textContent = "10 rounds have passed! Player 1 has the most points and is the winner!";
+        } else if (player2.stars > player1.stars){
+            message.textContent = "10 rounds have passed! Player 2 has the most points and is the winner!";
+        } else if (player1.money > player2.money){
+            message.textContent = "10 rounds have passed! Player 1 has the most money left and is the winner!";
+        } else if (player2.money > player1.money){
+            message.textContent = "10 rounds have passed! Player 2 has the most money left and is the winner!";
+        } else{
+            message.textContent = "10 rounds have passed! It's a tie!";
+        }
+        end = true;
+        return;
+    } if (Math.random() < 0.5){
+        player1_turn = true;
+        turn_counter.textContent = "Player 1's Turn";
+    } else{
+        player1_turn = false;
+        turn_counter.textContent = "Player 2's Turn";
+    }
+} else{
+    if(player1_turn){
+        player2.money -= loss;
+        player2.roster.push(auction_player);
+        player2.stars += player_ranking[players.indexOf(auction_player)];
+        message.textContent = "Sold to player 2 for $" + loss + "!";
+    } else{
+        player1.money -= loss;
+        player1.roster.push(auction_player);
+        player1.stars += player_ranking[players.indexOf(auction_player)];
+        message.textContent = "Sold to player 1 for $" + loss + "!";
+    }
+    document.getElementById("money_counter").textContent = "Player 1's Money: " + player1.money + " | Player 2's Money: " + player2.money;
+    player_ranking.splice(players.indexOf(auction_player), 1);
+    players.splice(players.indexOf(auction_player), 1);
+    auction_player = players[Math.floor(Math.random()*players.length)];
+    document.getElementById("auction_player").textContent = "The player is " + auction_player;
+    document.getElementById("rating").textContent = "Rating: " + player_ranking[players.indexOf(auction_player)] + (player_ranking[players.indexOf(auction_player)] > 1 ? " points" : " point");
+    document.getElementById("pass").textContent = "Skip";
+    loss = 0;
+    round_count += 1;
+    stage = "first_turn";
+    const player1_spending_efficiency = parseFloat(((5*player1.money)/(player1.stars/player1.roster.length)).toFixed(2));
+    const player2_spending_efficiency = parseFloat(((5*player2.money)/(player2.stars/player2.roster.length)).toFixed(2));
+    if (round_count == 10){
+        document.getElementById("bid").disabled = true;
+        document.getElementById("pass").disabled = true;
+        document.getElementById("player1:").hidden = false;
+        document.getElementById("player2:").hidden = false;
+        if (player1.roster.length > 0){
+            document.getElementById("player1_data").insertAdjacentHTML("beforeend", "<li>Score: " + player1.stars + "</li>");
+            document.getElementById("player1_data").insertAdjacentHTML("beforeend", "<li>Money Spent: " + (20 - player1.money) + "</li>");
+            document.getElementById("player1_data").insertAdjacentHTML("beforeend", "<li>Spending Efficiency: " + player1_spending_efficiency + "%</li>");
+        } else{
+            document.getElementById("player1_data").insertAdjacentHTML("beforeend", "<li>Player 1 is a failure and didn't get anyone</li>");
+        } if(player2.roster.length > 0){
+            document.getElementById("player2_data").insertAdjacentHTML("beforeend", "<li>Score: " + player2.stars + "</li>");
+            document.getElementById("player2_data").insertAdjacentHTML("beforeend", "<li>Money Spent: " + (20 - player2.money) + "</li>");
+            document.getElementById("player2_data").insertAdjacentHTML("beforeend", "<li>Spending Efficiency: " + player2_spending_efficiency + "%</li>");
+        } else{
+            document.getElementById("player2_data").insertAdjacentHTML("beforeend", "<li>Player 2 is a failure and didn't get anyone</li>");
+        } if (player1.stars > player2.stars){
+            message.textContent = "10 rounds have passed! Player 1 has the most points and is the winner!";
+        } else if (player2.stars > player1.stars){
+            message.textContent = "10 rounds have passed! Player 2 has the most points and is the winner!";
+        } else if (player1.money > player2.money){
+            message.textContent = "10 rounds have passed! Player 1 has the most money left and is the winner!";
+        } else if (player2.money > player1.money){
+            message.textContent = "10 rounds have passed! Player 2 has the most money left and is the winner!";
+        } else{
+            message.textContent = "10 rounds have passed! It's a tie!";
+        }
+        end = true;
+        return;
+    }
+    if (Math.random() < 0.5){
+        player1_turn = true;
+        turn_counter.textContent = "Player 1's Turn";
+    } else{
+        player1_turn = false;
+        turn_counter.textContent = "Player 2's Turn";
+    }
+}} else{
+    message.textContent = "Go away the game's over";
+}})
