@@ -1,2 +1,0 @@
-# Draft
-A baseball game
